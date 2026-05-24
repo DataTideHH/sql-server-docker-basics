@@ -19,7 +19,16 @@ The project is part of my Data/BI learning path with a focus on SQL, data modell
 
 ## Current Status
 
-Initial repository setup.
+Initial Docker-based SQL Server setup is working.
+
+Verified:
+
+- SQL Server container starts successfully
+- SQL Server listens on host port `14333`
+- `sqlcmd` is available inside the container
+- connection test with `SELECT @` works
+- DataGrip connection works
+- DPA training database scripts are included
 
 Included:
 
@@ -63,9 +72,6 @@ The `.env` file is intentionally ignored by Git.
 
 ## Planned Next Steps
 
-- start SQL Server container
-- verify container status
-- connect with DataGrip
-- create a small learning database
-- add SQL scripts for schema and sample data
-- connect from Python/DataSpell later
+- document DataGrip workflow
+- add Python/DataSpell connection example
+- add optional pandas-based analysis notebook
