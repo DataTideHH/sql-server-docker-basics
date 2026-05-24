@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+
+# editor / IDE files
+.vscode/
+.idea/
+
+# local environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# temporary files
+*.tmp
+*.bak
+*.swp
+
+# local data / exports
+data/
+exports/
