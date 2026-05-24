@@ -26,7 +26,7 @@ Verified:
 - SQL Server container starts successfully
 - SQL Server listens on host port `14333`
 - `sqlcmd` is available inside the container
-- connection test with `SELECT @` works
+- connection test with `SELECT @@VERSION` works
 - DataGrip connection works
 - DPA training database scripts are included
 
