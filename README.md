@@ -45,7 +45,7 @@ Not included:
 - private data
 - exported local data
 
-## Planned Structure
+## Repository Structure
 
 ```text
 sql-server-docker-basics/
