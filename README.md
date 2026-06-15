@@ -160,8 +160,9 @@ Current examples:
 
 - `01_basic_checks.sql`
 - `02_training_queries.sql`
+- `03_data_quality_checks.sql`
 
-These scripts are intended as a practical starting point for SQL Server checks, training queries and later reporting-oriented SQL examples.
+These scripts are intended as a practical starting point for SQL Server checks, training queries, basic data quality checks and later reporting-oriented SQL examples.
 
 ---
 
