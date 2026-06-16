@@ -91,18 +91,24 @@ Not included:
 
 ```text
 sql-server-docker-basics/
-├── docker-compose.yml
+├── README.md
+├── LICENSE
 ├── .env.example
 ├── .gitignore
-├── README.md
+├── docker-compose.yml
 ├── docs/
 │   ├── datagrip-workflow.md
 │   └── project-notes.md
 ├── sql/
+│   ├── 01_create_database.sql
+│   ├── 02_create_schema.sql
+│   ├── 03_insert_sample_data.sql
+│   ├── 04_analysis_queries.sql
 │   └── examples/
 │       ├── README.md
 │       ├── 01_basic_checks.sql
-│       └── 02_training_queries.sql
+│       ├── 02_training_queries.sql
+│       └── 03_data_quality_checks.sql
 └── notebooks/
 ```
 
@@ -150,7 +156,31 @@ This includes the local connection setup and the basic workflow for working with
 
 ## SQL Examples
 
-Example scripts are available in:
+The repository contains two kinds of SQL scripts:
+
+1. core SQL workflow scripts that build on each other
+2. additional standalone example scripts for checks, training queries and data quality practice
+
+### Core SQL workflow scripts
+
+Core SQL workflow scripts are available directly under:
+
+```text
+sql/
+```
+
+These scripts document a small end-to-end SQL learning workflow:
+
+- `01_create_database.sql` creates the local training database in an idempotent way
+- `02_create_schema.sql` defines a small relational schema with primary keys, foreign keys and uniqueness constraints
+- `03_insert_sample_data.sql` inserts reproducible synthetic sample data
+- `04_analysis_queries.sql` contains reporting-oriented SQL queries, including joins, averages, pass-rate calculations and a simple below-target flag
+
+The sample data is synthetic and does not contain real personal or customer data.
+
+### Additional standalone example scripts
+
+Additional standalone example scripts are available in:
 
 ```text
 sql/examples/
@@ -162,7 +192,9 @@ Current examples:
 - `02_training_queries.sql`
 - `03_data_quality_checks.sql`
 
-These scripts are intended as a practical starting point for SQL Server checks, training queries, basic data quality checks and later reporting-oriented SQL examples.
+The `sql/examples/` scripts are intended as a practical starting point for SQL Server checks, training queries, basic data quality checks and later reporting-oriented SQL examples.
+
+Together, the core workflow scripts and the standalone examples show database setup, relational schema design, reproducible sample data, analysis queries and basic data quality checks.
 
 ---
 
