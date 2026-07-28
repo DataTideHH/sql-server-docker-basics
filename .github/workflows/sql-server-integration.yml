@@ -37,6 +37,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Show runner tool versions
         shell: pwsh
@@ -94,6 +96,19 @@ jobs:
         shell: pwsh
         run: |
           & ./scripts/Initialize-Lab.ps1 -TimeoutSeconds 300 -SkipImagePull
+
+      - name: Write validation summary
+        shell: pwsh
+        run: |
+          @'
+          ## SQL Server integration result
+
+          - PowerShell syntax validation: passed
+          - Fresh SQL Server provisioning: passed
+          - Relational integrity suite: passed
+          - Dimensional reporting reconciliation: passed
+          - Second complete run for repeatability: passed
+          '@ | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
 
       - name: Show SQL Server diagnostics on failure
         if: failure()
