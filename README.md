@@ -1,10 +1,10 @@
 # SQL Server Docker Basics
 
-**Microsoft SQL Server 2022 · Docker Desktop · T-SQL · relational modelling · data quality · reporting queries**
+**Microsoft SQL Server 2022 · Docker Desktop · PowerShell 7 · T-SQL · relational modelling · data quality · reporting queries**
 
-This repository is a compact SQL Server analytics lab. It provides a local database environment, a small normalized training model, reproducible synthetic data and reporting-oriented T-SQL queries.
+This repository is a compact SQL Server analytics lab. It provides a reproducible local database environment, a small normalized training model, synthetic seed data, reporting-oriented T-SQL queries and a PowerShell bootstrap for startup, readiness checks, ordered execution and verification.
 
-It is part of my Data/BI portfolio during the IHK retraining program in Data and Process Analysis. The project is deliberately bounded: the current focus is a clear relational foundation that can later support automated provisioning, integration tests and a Power BI-oriented data mart.
+It is part of my Data/BI portfolio during the IHK retraining program in Data and Process Analysis. The project is deliberately bounded: the current focus is a reliable relational foundation that can later support stronger business rules, integration tests and a Power BI-oriented data mart.
 
 ---
 
@@ -12,11 +12,13 @@ It is part of my Data/BI portfolio during the IHK retraining program in Data and
 
 | Area | Current evidence |
 |---|---|
-| SQL Server environment | SQL Server 2022 runs in Docker with an explicit host-port mapping and persistent local volume |
+| SQL Server environment | SQL Server 2022 runs in Docker with an explicit host-port mapping, persistent local volume and healthcheck |
+| Provisioning | PowerShell validates Docker and `.env`, starts the service, waits for readiness and executes the SQL workflow in order |
 | Configuration | Local credentials are supplied through `.env`; the file is excluded from version control |
 | Relational model | Four related tables with primary keys, foreign keys and uniqueness constraints |
 | Sample data | Synthetic modules, learners, assessments and results inserted with repeatable `NOT EXISTS` checks |
 | Analysis | Joins, grouped KPIs, average scores, pass rates and below-target flags |
+| Verification | A final SQL script checks required tables and expected row counts and fails the run on deviations |
 | Data quality | Standalone checks for missing values, duplicate business keys and invalid numeric ranges |
 | SQL client workflow | Documented DataGrip connection and script execution process |
 
@@ -24,12 +26,14 @@ It is part of my Data/BI portfolio during the IHK retraining program in Data and
 
 A quick technical review can follow these files in order:
 
-1. [`docker-compose.yml`](docker-compose.yml) — local SQL Server runtime and volume configuration
-2. [`sql/02_create_schema.sql`](sql/02_create_schema.sql) — relational model and constraints
-3. [`sql/03_insert_sample_data.sql`](sql/03_insert_sample_data.sql) — deterministic synthetic seed data
-4. [`sql/04_analysis_queries.sql`](sql/04_analysis_queries.sql) — reporting-oriented queries and KPIs
-5. [`sql/examples/03_data_quality_checks.sql`](sql/examples/03_data_quality_checks.sql) — documented data-quality checks
-6. [`docs/datagrip-workflow.md`](docs/datagrip-workflow.md) — local connection and execution workflow
+1. [`docker-compose.yml`](docker-compose.yml) — pinned SQL Server image, volume, bind mount and healthcheck
+2. [`scripts/Initialize-Lab.ps1`](scripts/Initialize-Lab.ps1) — end-to-end local bootstrap
+3. [`scripts/SqlServerLab.Common.ps1`](scripts/SqlServerLab.Common.ps1) — shared Docker, configuration and readiness functions
+4. [`sql/02_create_schema.sql`](sql/02_create_schema.sql) — relational model and constraints
+5. [`sql/03_insert_sample_data.sql`](sql/03_insert_sample_data.sql) — deterministic synthetic seed data
+6. [`sql/04_analysis_queries.sql`](sql/04_analysis_queries.sql) — reporting-oriented queries and KPIs
+7. [`sql/05_verify_setup.sql`](sql/05_verify_setup.sql) — executable setup verification
+8. [`sql/examples/03_data_quality_checks.sql`](sql/examples/03_data_quality_checks.sql) — standalone data-quality example
 
 ---
 
@@ -39,18 +43,21 @@ A quick technical review can follow these files in order:
 .env configuration
         │
         ▼
-Docker Compose
+PowerShell bootstrap
         │
-        ▼
-SQL Server 2022 container
-        │
-        ▼
-dpa_training database
-        │
-        ├── normalized tables
-        ├── synthetic seed data
-        ├── quality-check example
-        └── reporting queries
+        ├── validate Docker and Compose
+        ├── validate local configuration
+        ├── pull and start SQL Server
+        └── wait for container health
+                │
+                ▼
+        ordered T-SQL workflow
+                │
+                ├── create database
+                ├── create schema
+                ├── insert synthetic data
+                ├── run reporting queries
+                └── verify tables and row counts
 ```
 
 The host connects to SQL Server through port `14333`. Using a non-default host port avoids collisions with a separate local SQL Server installation while keeping the container's internal port at `1433`.
@@ -62,10 +69,27 @@ The host connects to SQL Server through port `14333`. Using a non-default host p
 ### Database environment
 
 - SQL Server 2022 container managed through Docker Compose
+- pinned SQL Server 2022 cumulative-update image
 - persistent Docker volume for local development
-- configurable SQL Server password, edition and host port
+- configurable SQL Server password, edition, image and host port
+- healthcheck based on `sqlcmd`
+- read-only container mount for repository SQL scripts
 - connection through DataGrip or another SQL Server client
-- `sqlcmd` available inside the container for command-line verification
+
+### PowerShell provisioning
+
+The PowerShell workflow provides:
+
+- Docker CLI and engine validation
+- Docker Compose validation
+- `.env` presence and value checks
+- rejection of the public password placeholder
+- SQL Server image pull with an optional skip switch
+- container startup and health polling
+- ordered execution of the core SQL scripts
+- non-zero exit behaviour for Docker and SQL errors
+- final verification of database objects and row counts
+- safe stop and container-removal commands that preserve the named volume
 
 ### Relational model
 
@@ -95,6 +119,19 @@ The core analysis script includes:
 - learner-level performance summaries
 - modules flagged below an 80 percent pass-rate target
 
+### Verification
+
+`sql/05_verify_setup.sql` stops the workflow if a required table is missing or the expected synthetic-data counts differ from:
+
+| Object | Expected rows |
+|---|---:|
+| learning modules | 5 |
+| learners | 5 |
+| assessments | 5 |
+| assessment results | 25 |
+
+The normal setup can be executed repeatedly. Existing objects remain in place and the seed script does not duplicate the included records.
+
 ### Data-quality examples
 
 The standalone quality script covers:
@@ -121,11 +158,18 @@ sql-server-docker-basics/
 ├── docs/
 │   ├── datagrip-workflow.md
 │   └── project-notes.md
+├── scripts/
+│   ├── Initialize-Lab.ps1
+│   ├── Invoke-SqlScript.ps1
+│   ├── SqlServerLab.Common.ps1
+│   ├── Stop-Lab.ps1
+│   └── Test-LabConnection.ps1
 └── sql/
     ├── 01_create_database.sql
     ├── 02_create_schema.sql
     ├── 03_insert_sample_data.sql
     ├── 04_analysis_queries.sql
+    ├── 05_verify_setup.sql
     └── examples/
         ├── README.md
         ├── 01_basic_checks.sql
@@ -139,33 +183,53 @@ sql-server-docker-basics/
 
 ### Prerequisites
 
-- Docker Desktop
+- Windows 11
+- PowerShell 7
+- Docker Desktop with the Linux engine running
 - Git
-- a SQL Server client such as DataGrip
+- optional: a SQL Server client such as DataGrip
 
 ### 1. Create the local environment file
 
-PowerShell:
-
 ```powershell
 Copy-Item .env.example .env
+notepad.exe .env
 ```
 
-macOS or Linux shell:
+Replace the password placeholder before starting the lab. The `.env` file is ignored by Git and must remain local.
 
-```bash
-cp .env.example .env
+### 2. Initialize the complete lab
+
+```powershell
+& ".\scripts\Initialize-Lab.ps1"
 ```
 
-Replace the example password before starting the container. The `.env` file is ignored by Git and must remain local.
+The script pulls the configured image, starts SQL Server, waits for a healthy container, executes the numbered SQL scripts and verifies the resulting database state.
 
-### 2. Start SQL Server
+For later runs, the image pull can be skipped:
 
-```bash
-docker compose up -d
+```powershell
+& ".\scripts\Initialize-Lab.ps1" -SkipImagePull
 ```
 
-### 3. Connect to the instance
+### 3. Verify the current database state
+
+```powershell
+& ".\scripts\Test-LabConnection.ps1"
+```
+
+### 4. Run selected SQL scripts
+
+```powershell
+& ".\scripts\Invoke-SqlScript.ps1" -Path @(
+    "sql/03_insert_sample_data.sql",
+    "sql/04_analysis_queries.sql"
+)
+```
+
+Only SQL files inside the repository's `sql/` directory are accepted.
+
+### 5. Connect with a SQL client
 
 | Setting | Value |
 |---|---|
@@ -174,21 +238,25 @@ docker compose up -d
 | Port | `14333` |
 | User | `sa` |
 | Password | local value from `.env` |
+| Database | `dpa_training` |
 
 The detailed DataGrip procedure is documented in [`docs/datagrip-workflow.md`](docs/datagrip-workflow.md).
 
-### 4. Run the core scripts
+### 6. Stop the lab
 
-Execute the scripts in this order:
+Stop the running container while preserving it and the database volume:
 
-```text
-sql/01_create_database.sql
-sql/02_create_schema.sql
-sql/03_insert_sample_data.sql
-sql/04_analysis_queries.sql
+```powershell
+& ".\scripts\Stop-Lab.ps1"
 ```
 
-The creation and seed scripts use existence checks so the normal setup can be repeated without duplicating the included sample records.
+Remove the container and Compose network while preserving the named database volume:
+
+```powershell
+& ".\scripts\Stop-Lab.ps1" -RemoveContainer
+```
+
+The workflow deliberately does not remove the named volume.
 
 ---
 
@@ -196,23 +264,23 @@ The creation and seed scripts use existence checks so the normal setup can be re
 
 This repository does not currently claim:
 
-- unattended database provisioning
 - production deployment or high availability
-- automated migrations
+- production user and role design
+- automated schema migrations
 - CI-based SQL Server integration tests
 - a dimensional data mart
 - a finished Power BI report
 - Azure or Microsoft Fabric deployment
+- a macOS or Linux bootstrap equivalent to the PowerShell workflow
 
 Those boundaries are intentional. Each later extension should add an executable capability and a verifiable result rather than only another technology label.
 
 ## Next Development Steps
 
-1. add a PowerShell bootstrap with readiness checks and ordered script execution
-2. harden the relational model with executable business-rule and integrity tests
-3. add a small dimensional reporting layer for Power BI
-4. run the complete database workflow in GitHub Actions
-5. document and validate a Power BI connection against the reporting layer
+1. harden the relational model with executable business-rule and integrity tests
+2. add a small dimensional reporting layer for Power BI
+3. run the complete database workflow in GitHub Actions
+4. document and validate a Power BI connection against the reporting layer
 
 ---
 
