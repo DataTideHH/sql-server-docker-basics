@@ -10,7 +10,7 @@ The repository is intentionally limited to one local SQL Server workflow. It is 
 
 The repository currently includes:
 
-- SQL Server 2022 running in Docker Compose
+- a SQL Server 2022 container managed with Docker Compose
 - a persistent local Docker volume
 - configurable credentials and host port through `.env`
 - a documented DataGrip connection workflow
