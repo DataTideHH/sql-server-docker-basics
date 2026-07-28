@@ -39,6 +39,9 @@ Write-Host 'Running the ordered database workflow...'
 Write-Host 'Verifying the resulting database state...'
 & (Join-Path $PSScriptRoot 'Test-LabConnection.ps1')
 
+Write-Host 'Testing enforced data-integrity rules...'
+& (Join-Path $PSScriptRoot 'Test-DataIntegrity.ps1')
+
 $port = Get-DotEnvValue -Path $script:EnvironmentFile -Name 'MSSQL_PORT'
 
 if ([string]::IsNullOrWhiteSpace($port)) {

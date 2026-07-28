@@ -61,25 +61,22 @@ JOIN dpa.learning_modules lm
 WHERE NOT EXISTS (
     SELECT 1
     FROM dpa.assessments a
-    WHERE a.assessment_name = v.assessment_name
+    WHERE a.module_id = lm.module_id
+      AND a.assessment_name = v.assessment_name
 );
 GO
 
--- Insert synthetic assessment results
+-- Insert synthetic assessment results. Pass/fail is derived in
+-- dpa.v_assessment_results from score and the assessment pass threshold.
 INSERT INTO dpa.assessment_results (
     assessment_id,
     learner_id,
-    score,
-    passed
+    score
 )
 SELECT
     a.assessment_id,
     l.learner_id,
-    v.score,
-    CASE
-        WHEN v.score >= a.pass_score THEN CAST(1 AS bit)
-        ELSE CAST(0 AS bit)
-    END AS passed
+    v.score
 FROM (VALUES
     (N'PC Grundlagen LEK 1',           N'LRN-001', 78.00),
     (N'PC Grundlagen LEK 1',           N'LRN-002', 62.00),
