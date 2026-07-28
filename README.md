@@ -1,89 +1,111 @@
 # SQL Server Docker Basics
 
-**Microsoft SQL Server 2022 · Docker Desktop · SQL practice · DataGrip workflow · Data/BI learning path**
+**Microsoft SQL Server 2022 · Docker Desktop · T-SQL · relational modelling · data quality · reporting queries**
 
-This repository documents a local Microsoft SQL Server setup for learning relational databases, SQL workflows, data modelling, data quality checks and reporting-oriented queries.
+This repository is a compact SQL Server analytics lab. It provides a local database environment, a small normalized training model, reproducible synthetic data and reporting-oriented T-SQL queries.
 
-It is part of my broader **Data/BI portfolio** as an IHK retraining student in **Data and Process Analysis**. The goal is not to build a production database system, but to create a clean, reproducible foundation for practical SQL and Microsoft-oriented BI learning.
-
----
-
-## Why This Project Matters for Data/BI
-
-SQL Server is a central part of many Microsoft-based data environments. For Data/BI work, it is not enough to only write isolated SQL queries. A useful workflow also needs:
-
-- a reproducible local database environment
-- clear connection settings and documented tooling
-- safe handling of credentials
-- structured SQL scripts
-- basic validation queries
-- reporting-oriented aggregations
-- a path from relational data toward Power BI, Fabric and BI-style analysis
-
-This project demonstrates the foundation for that workflow: a local SQL Server instance running in Docker, documented DataGrip access and SQL scripts that can later feed Power BI or Python-based analysis.
+It is part of my Data/BI portfolio during the IHK retraining program in Data and Process Analysis. The project is deliberately bounded: the current focus is a clear relational foundation that can later support automated provisioning, integration tests and a Power BI-oriented data mart.
 
 ---
 
-## What This Demonstrates
+## Project at a Glance
 
-This repository demonstrates:
+| Area | Current evidence |
+|---|---|
+| SQL Server environment | SQL Server 2022 runs in Docker with an explicit host-port mapping and persistent local volume |
+| Configuration | Local credentials are supplied through `.env`; the file is excluded from version control |
+| Relational model | Four related tables with primary keys, foreign keys and uniqueness constraints |
+| Sample data | Synthetic modules, learners, assessments and results inserted with repeatable `NOT EXISTS` checks |
+| Analysis | Joins, grouped KPIs, average scores, pass rates and below-target flags |
+| Data quality | Standalone checks for missing values, duplicate business keys and invalid numeric ranges |
+| SQL client workflow | Documented DataGrip connection and script execution process |
 
-- running Microsoft SQL Server 2022 locally in Docker
-- using `.env` files for local credentials without committing secrets
-- connecting to SQL Server from DataGrip
-- verifying a SQL Server instance with basic checks
-- organizing SQL scripts in a clear folder structure
-- documenting a practical local database workflow
-- preparing SQL practice for reporting, data quality and BI-style analysis
+## Review Path
 
----
+A quick technical review can follow these files in order:
 
-## Data/BI-Oriented Stack
-
-| Layer | Tool / Concept | Purpose |
-|---|---|---|
-| Database | Microsoft SQL Server 2022 | Relational database practice and Microsoft data stack foundation |
-| Runtime | Docker Desktop | Reproducible local SQL Server environment |
-| SQL Client | DataGrip | SQL development, database inspection and query execution |
-| Scripts | SQL files | Repeatable checks, training queries and reporting-oriented examples |
-| Configuration | `.env` / `.env.example` | Local credential handling without committing secrets |
-| BI Layer | Power BI | Planned next layer for connecting reports to SQL Server data |
-| Platform Perspective | Microsoft Fabric / Azure | Longer-term Microsoft data platform context |
+1. [`docker-compose.yml`](docker-compose.yml) — local SQL Server runtime and volume configuration
+2. [`sql/02_create_schema.sql`](sql/02_create_schema.sql) — relational model and constraints
+3. [`sql/03_insert_sample_data.sql`](sql/03_insert_sample_data.sql) — deterministic synthetic seed data
+4. [`sql/04_analysis_queries.sql`](sql/04_analysis_queries.sql) — reporting-oriented queries and KPIs
+5. [`sql/examples/03_data_quality_checks.sql`](sql/examples/03_data_quality_checks.sql) — documented data-quality checks
+6. [`docs/datagrip-workflow.md`](docs/datagrip-workflow.md) — local connection and execution workflow
 
 ---
 
-## Current Status
+## Workflow
 
-The local Docker-based SQL Server setup is working and documented.
+```text
+.env configuration
+        │
+        ▼
+Docker Compose
+        │
+        ▼
+SQL Server 2022 container
+        │
+        ▼
+dpa_training database
+        │
+        ├── normalized tables
+        ├── synthetic seed data
+        ├── quality-check example
+        └── reporting queries
+```
 
-Verified:
+The host connects to SQL Server through port `14333`. Using a non-default host port avoids collisions with a separate local SQL Server installation while keeping the container's internal port at `1433`.
 
-- SQL Server container starts successfully
-- SQL Server listens on host port `14333`
-- `sqlcmd` is available inside the container
-- connection test with `SELECT @@VERSION` works
-- DataGrip connection works
-- DPA training database scripts are included
-- SQL example scripts are organized under `sql/examples/`
+---
 
-Included:
+## Implemented Scope
 
-- `docker-compose.yml`
-- `.env.example`
-- `.gitignore`
-- documented DataGrip workflow
-- SQL example scripts
-- basic project notes
-- folder structure for future notebooks and BI-related extensions
+### Database environment
 
-Not included:
+- SQL Server 2022 container managed through Docker Compose
+- persistent Docker volume for local development
+- configurable SQL Server password, edition and host port
+- connection through DataGrip or another SQL Server client
+- `sqlcmd` available inside the container for command-line verification
 
-- real passwords
-- `.env` files
-- database volumes
-- private data
-- exported local data
-- personal or customer data
+### Relational model
+
+The `dpa_training` database contains four tables in the `dpa` schema:
+
+| Table | Grain |
+|---|---|
+| `dpa.learning_modules` | one row per learning module |
+| `dpa.learners` | one row per synthetic learner |
+| `dpa.assessments` | one row per assessment |
+| `dpa.assessment_results` | one row per learner and assessment |
+
+The schema includes:
+
+- surrogate identity keys
+- stable business codes for modules and learners
+- primary and foreign keys
+- unique module and learner codes
+- a unique learner-assessment combination
+
+### Reporting queries
+
+The core analysis script includes:
+
+- a detailed assessment result set assembled through joins
+- average score and pass rate by module
+- learner-level performance summaries
+- modules flagged below an 80 percent pass-rate target
+
+### Data-quality examples
+
+The standalone quality script covers:
+
+- row-count baselines
+- missing-value checks
+- duplicate business-key detection
+- invalid quantity and amount ranges
+- a compact quality summary for reporting preparation
+
+The quality example is currently independent from the core `dpa` model. Model-specific executable quality gates are planned as a separate extension.
 
 ---
 
@@ -99,38 +121,51 @@ sql-server-docker-basics/
 ├── docs/
 │   ├── datagrip-workflow.md
 │   └── project-notes.md
-├── sql/
-│   ├── 01_create_database.sql
-│   ├── 02_create_schema.sql
-│   ├── 03_insert_sample_data.sql
-│   ├── 04_analysis_queries.sql
-│   └── examples/
-│       ├── README.md
-│       ├── 01_basic_checks.sql
-│       ├── 02_training_queries.sql
-│       └── 03_data_quality_checks.sql
-└── notebooks/
+└── sql/
+    ├── 01_create_database.sql
+    ├── 02_create_schema.sql
+    ├── 03_insert_sample_data.sql
+    ├── 04_analysis_queries.sql
+    └── examples/
+        ├── README.md
+        ├── 01_basic_checks.sql
+        ├── 02_training_queries.sql
+        └── 03_data_quality_checks.sql
 ```
 
 ---
 
-## Environment Variables
+## Local Setup
 
-Create a local `.env` file from `.env.example`:
+### Prerequisites
+
+- Docker Desktop
+- Git
+- a SQL Server client such as DataGrip
+
+### 1. Create the local environment file
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+macOS or Linux shell:
 
 ```bash
 cp .env.example .env
 ```
 
-Then change the password in `.env`.
+Replace the example password before starting the container. The `.env` file is ignored by Git and must remain local.
 
-The `.env` file is intentionally ignored by Git.
+### 2. Start SQL Server
 
----
+```bash
+docker compose up -d
+```
 
-## Local Connection
-
-Default local connection settings:
+### 3. Connect to the instance
 
 | Setting | Value |
 |---|---|
@@ -140,91 +175,55 @@ Default local connection settings:
 | User | `sa` |
 | Password | local value from `.env` |
 
----
+The detailed DataGrip procedure is documented in [`docs/datagrip-workflow.md`](docs/datagrip-workflow.md).
 
-## DataGrip Workflow
+### 4. Run the core scripts
 
-The DataGrip workflow is documented in:
-
-```text
-docs/datagrip-workflow.md
-```
-
-This includes the local connection setup and the basic workflow for working with the SQL Server container from DataGrip.
-
----
-
-## SQL Examples
-
-The repository contains two kinds of SQL scripts:
-
-1. core SQL workflow scripts that build on each other
-2. additional standalone example scripts for checks, training queries and data quality practice
-
-### Core SQL workflow scripts
-
-Core SQL workflow scripts are available directly under:
+Execute the scripts in this order:
 
 ```text
-sql/
+sql/01_create_database.sql
+sql/02_create_schema.sql
+sql/03_insert_sample_data.sql
+sql/04_analysis_queries.sql
 ```
 
-These scripts document a small end-to-end SQL learning workflow:
-
-- `01_create_database.sql` creates the local training database in an idempotent way
-- `02_create_schema.sql` defines a small relational schema with primary keys, foreign keys and uniqueness constraints
-- `03_insert_sample_data.sql` inserts reproducible synthetic sample data
-- `04_analysis_queries.sql` contains reporting-oriented SQL queries, including joins, averages, pass-rate calculations and a simple below-target flag
-
-The sample data is synthetic and does not contain real personal or customer data.
-
-### Additional standalone example scripts
-
-Additional standalone example scripts are available in:
-
-```text
-sql/examples/
-```
-
-Current examples:
-
-- `01_basic_checks.sql`
-- `02_training_queries.sql`
-- `03_data_quality_checks.sql`
-
-The `sql/examples/` scripts are intended as a practical starting point for SQL Server checks, training queries, basic data quality checks and later reporting-oriented SQL examples.
-
-Together, the core workflow scripts and the standalone examples show database setup, relational schema design, reproducible sample data, analysis queries and basic data quality checks.
+The creation and seed scripts use existence checks so the normal setup can be repeated without duplicating the included sample records.
 
 ---
 
-## Roadmap: From SQL Server to BI Workflow
+## Current Boundaries
 
-Planned improvements are intentionally incremental:
+This repository does not currently claim:
 
-1. add a small synthetic training database
-2. add data quality checks and validation queries
-3. add reporting-oriented aggregation queries
-4. add a simple star-schema example for BI learning
-5. document a Power BI connection workflow
-6. optionally add a Python/pandas notebook for SQL Server data access
-7. connect the project conceptually to Microsoft Fabric/Azure as the next platform layer
+- unattended database provisioning
+- production deployment or high availability
+- automated migrations
+- CI-based SQL Server integration tests
+- a dimensional data mart
+- a finished Power BI report
+- Azure or Microsoft Fabric deployment
 
-Power BI and Microsoft Fabric are not treated as finished parts of this repository yet. They are the planned next layers after the SQL Server foundation is clean, documented and reproducible.
+Those boundaries are intentional. Each later extension should add an executable capability and a verifiable result rather than only another technology label.
+
+## Next Development Steps
+
+1. add a PowerShell bootstrap with readiness checks and ordered script execution
+2. harden the relational model with executable business-rule and integrity tests
+3. add a small dimensional reporting layer for Power BI
+4. run the complete database workflow in GitHub Actions
+5. document and validate a Power BI connection against the reporting layer
 
 ---
 
-## Notes and Limitations
+## Data and Credential Safety
 
-This repository is a local learning setup, not a production database project.
+Only synthetic training data belongs in this repository. The following remain excluded:
 
-It should not contain:
-
-- real credentials
-- private dumps
-- personal data
-- customer data
+- `.env` files and real credentials
+- personal or customer data
+- private database dumps
 - SQL Server database volumes
-- generated local exports
+- local exports and backup files
 
-The purpose is to document a realistic learning workflow for SQL Server, relational data practice and Data/BI preparation.
+See [`docs/project-notes.md`](docs/project-notes.md) for the current design decisions and scope notes.
