@@ -1,0 +1,127 @@
+name: SQL Server integration
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/sql-server-integration.yml
+      - .env.example
+      - docker-compose.yml
+      - scripts/**
+      - sql/**
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/sql-server-integration.yml
+      - .env.example
+      - docker-compose.yml
+      - scripts/**
+      - sql/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sql-server-integration-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sql-server-integration:
+    name: Provision, verify, and repeat
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Show runner tool versions
+        shell: pwsh
+        run: |
+          Write-Host "PowerShell: $($PSVersionTable.PSVersion)"
+          Write-Host "Docker server: $(docker version --format '{{.Server.Version}}')"
+          docker compose version
+
+      - name: Validate PowerShell syntax
+        shell: pwsh
+        run: |
+          $parseFailed = $false
+
+          Get-ChildItem -LiteralPath ./scripts -Filter *.ps1 | ForEach-Object {
+              $tokens = $null
+              $parseErrors = $null
+
+              [System.Management.Automation.Language.Parser]::ParseFile(
+                  $_.FullName,
+                  [ref]$tokens,
+                  [ref]$parseErrors
+              ) | Out-Null
+
+              if ($parseErrors.Count -gt 0) {
+                  $parseFailed = $true
+                  Write-Error "Syntax error in $($_.Name): $($parseErrors.Message -join '; ')"
+              }
+              else {
+                  Write-Host "OK: $($_.Name)"
+              }
+          }
+
+          if ($parseFailed) {
+              throw 'At least one PowerShell script contains a syntax error.'
+          }
+
+      - name: Create temporary CI configuration
+        shell: pwsh
+        run: |
+          $ciPassword = "Ci9!$([guid]::NewGuid().ToString('N'))"
+
+          @(
+              "MSSQL_SA_PASSWORD=$ciPassword"
+              'MSSQL_PID=Developer'
+              'MSSQL_PORT=14333'
+              'MSSQL_IMAGE=mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04'
+          ) | Set-Content -LiteralPath ./.env -Encoding utf8NoBOM
+
+      - name: Run complete workflow on a fresh runner
+        shell: pwsh
+        run: |
+          & ./scripts/Initialize-Lab.ps1 -TimeoutSeconds 300
+
+      - name: Run complete workflow again for repeatability
+        shell: pwsh
+        run: |
+          & ./scripts/Initialize-Lab.ps1 -TimeoutSeconds 300 -SkipImagePull
+
+      - name: Write validation summary
+        shell: pwsh
+        run: |
+          @'
+          ## SQL Server integration result
+
+          - PowerShell syntax validation: passed
+          - Fresh SQL Server provisioning: passed
+          - Relational integrity suite: passed
+          - Dimensional reporting reconciliation: passed
+          - Second complete run for repeatability: passed
+          '@ | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY
+
+      - name: Show SQL Server diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          docker compose --env-file .env -f docker-compose.yml ps --all || true
+          docker compose --env-file .env -f docker-compose.yml logs --tail 200 sqlserver || true
+
+      - name: Clean up CI containers
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f .env ]]; then
+            docker compose --env-file .env -f docker-compose.yml down --remove-orphans || true
+          fi
+          rm -f .env
