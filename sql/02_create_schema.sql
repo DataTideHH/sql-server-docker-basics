@@ -90,6 +90,7 @@ BEGIN
         END;
 
         DECLARE @default_constraint sysname;
+        DECLARE @drop_constraint_sql nvarchar(max);
 
         SELECT @default_constraint = dc.name
         FROM sys.default_constraints dc
@@ -101,8 +102,12 @@ BEGIN
 
         IF @default_constraint IS NOT NULL
         BEGIN
-            EXEC(N''ALTER TABLE dpa.assessment_results DROP CONSTRAINT ''
-                + QUOTENAME(@default_constraint));
+            SET @drop_constraint_sql =
+                N''ALTER TABLE dpa.assessment_results DROP CONSTRAINT ''
+                + QUOTENAME(@default_constraint)
+                + N'';'';
+
+            EXEC sys.sp_executesql @drop_constraint_sql;
         END;
 
         ALTER TABLE dpa.assessment_results DROP COLUMN passed;
