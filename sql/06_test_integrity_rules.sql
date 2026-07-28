@@ -26,7 +26,7 @@ END CATCH;
 IF XACT_STATE() <> 0
     ROLLBACK TRANSACTION;
 
-IF @error_number <> 547
+IF ISNULL(@error_number, 0) <> 547
     THROW 51101, 'Integrity test failed: max_score = 0 was not rejected by a check constraint.', 1;
 GO
 
@@ -51,7 +51,7 @@ END CATCH;
 IF XACT_STATE() <> 0
     ROLLBACK TRANSACTION;
 
-IF @error_number <> 547
+IF ISNULL(@error_number, 0) <> 547
     THROW 51102, 'Integrity test failed: pass_score above max_score was not rejected.', 1;
 GO
 
@@ -76,7 +76,7 @@ END CATCH;
 IF XACT_STATE() <> 0
     ROLLBACK TRANSACTION;
 
-IF @error_number <> 547
+IF ISNULL(@error_number, 0) <> 547
     THROW 51103, 'Integrity test failed: negative result score was not rejected.', 1;
 GO
 
@@ -104,7 +104,7 @@ END CATCH;
 IF XACT_STATE() <> 0
     ROLLBACK TRANSACTION;
 
-IF @error_number <> 51020
+IF ISNULL(@error_number, 0) <> 51020
     THROW 51104, 'Integrity test failed: score above max_score was not rejected by the result trigger.', 1;
 GO
 
@@ -138,7 +138,7 @@ END CATCH;
 IF XACT_STATE() <> 0
     ROLLBACK TRANSACTION;
 
-IF @error_number <> 51021
+IF ISNULL(@error_number, 0) <> 51021
     THROW 51105, 'Integrity test failed: max_score below an existing result was not rejected.', 1;
 GO
 
@@ -177,7 +177,7 @@ END CATCH;
 IF XACT_STATE() <> 0
     ROLLBACK TRANSACTION;
 
-IF @error_number NOT IN (2601, 2627)
+IF ISNULL(@error_number, 0) NOT IN (2601, 2627)
     THROW 51106, 'Integrity test failed: duplicate learner-assessment result was not rejected.', 1;
 GO
 
@@ -215,7 +215,7 @@ END CATCH;
 IF XACT_STATE() <> 0
     ROLLBACK TRANSACTION;
 
-IF @error_number NOT IN (2601, 2627)
+IF ISNULL(@error_number, 0) NOT IN (2601, 2627)
     THROW 51107, 'Integrity test failed: duplicate assessment name within a module was not rejected.', 1;
 GO
 
