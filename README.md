@@ -49,7 +49,7 @@ dpa_training database
         │
         ├── normalized tables
         ├── synthetic seed data
-        ├── validation examples
+        ├── quality-check example
         └── reporting queries
 ```
 
@@ -90,7 +90,7 @@ The schema includes:
 
 The core analysis script includes:
 
-- a detailed assessment result view assembled through joins
+- a detailed assessment result set assembled through joins
 - average score and pass rate by module
 - learner-level performance summaries
 - modules flagged below an 80 percent pass-rate target
@@ -144,6 +144,14 @@ sql-server-docker-basics/
 - a SQL Server client such as DataGrip
 
 ### 1. Create the local environment file
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+macOS or Linux shell:
 
 ```bash
 cp .env.example .env
