@@ -30,6 +30,8 @@ $coreScripts = @(
     'sql/01_create_database.sql'
     'sql/02_create_schema.sql'
     'sql/03_insert_sample_data.sql'
+    'sql/07_create_reporting_model.sql'
+    'sql/08_load_reporting_model.sql'
     'sql/04_analysis_queries.sql'
 )
 
@@ -41,6 +43,9 @@ Write-Host 'Verifying the resulting database state...'
 
 Write-Host 'Testing enforced data-integrity rules...'
 & (Join-Path $PSScriptRoot 'Test-DataIntegrity.ps1')
+
+Write-Host 'Verifying the dimensional reporting model...'
+& (Join-Path $PSScriptRoot 'Test-ReportingModel.ps1')
 
 $port = Get-DotEnvValue -Path $script:EnvironmentFile -Name 'MSSQL_PORT'
 
