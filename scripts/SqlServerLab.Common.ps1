@@ -1,6 +1,7 @@
 #Requires -Version 7.0
 
 Set-StrictMode -Version Latest
+$PSNativeCommandUseErrorActionPreference = $false
 
 $script:RepositoryRoot = Split-Path -Parent $PSScriptRoot
 $script:ComposeFile = Join-Path $script:RepositoryRoot 'docker-compose.yml'
@@ -37,7 +38,7 @@ function Invoke-DockerCommand {
         $exitCode = $LASTEXITCODE
 
         if ($exitCode -ne 0) {
-            throw "Docker command failed with exit code $exitCode: docker $($Arguments -join ' ')"
+            throw "Docker command failed with exit code ${exitCode}: docker $($Arguments -join ' ')"
         }
     }
     finally {
@@ -132,8 +133,13 @@ function Assert-LabConfiguration {
         throw 'MSSQL_SA_PASSWORD is missing or empty in .env.'
     }
 
-    if ($password -eq 'REPLACE_WITH_A_LOCAL_PASSWORD') {
-        throw 'Replace the MSSQL_SA_PASSWORD placeholder in .env before starting the lab.'
+    $rejectedPasswords = @(
+        'REPLACE_WITH_A_LOCAL_PASSWORD'
+        'ChangeThis_Strong_Password_2026!'
+    )
+
+    if ($password -in $rejectedPasswords) {
+        throw 'Replace the example MSSQL_SA_PASSWORD value in .env before starting the lab.'
     }
 
     $portText = Get-DotEnvValue -Path $script:EnvironmentFile -Name 'MSSQL_PORT'
@@ -155,7 +161,8 @@ function Get-SqlServerContainerId {
 
     $containerId = Invoke-ComposeCommand -Arguments @(
         'ps'
-        '-q'
+        '--all'
+        '--quiet'
         $script:SqlServerService
     ) -CaptureOutput
 
@@ -242,7 +249,7 @@ function Invoke-ContainerSqlCmd {
         [string[]]$SqlCmdArguments
     )
 
-    $shellCommand = 'export SQLCMDPASSWORD="$MSSQL_SA_PASSWORD"; exec /opt/mssql-tools18/bin/sqlcmd "$@"'
+    $shellCommand = 'export SQLCMDPASSWORD="$MSSQL_SA_PASSWORD"; exec {0} "$@"' -f $script:SqlCmdPath
     $arguments = @(
         'exec'
         '-T'
